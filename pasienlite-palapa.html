@@ -509,7 +509,7 @@ function showInvalidLink(message){
  * Ambil data dari Apps Script menggunakan JSONP agar dapat dipanggil
  * langsung dari halaman GitHub Pages.
  */
-function loadPatientById(id){
+async function loadPatientById(id){
   if(!id){
     showInvalidLink('ID estimasi tidak ditemukan pada link.');
     return;
@@ -522,6 +522,49 @@ function loadPatientById(id){
 
   showPatientMessage('Memuat data pasien…','Mohon tunggu sebentar.');
 
+  const baseUrl =
+    PALAPA_DATA_API_URL +
+    (PALAPA_DATA_API_URL.includes('?') ? '&' : '?') +
+    'id=' + encodeURIComponent(id) +
+    '&time=' + Date.now();
+
+  function handleResult(result){
+    if(result && result.status === 'success' && result.data){
+      renderPatient(result.data);
+      return true;
+    }
+
+    showInvalidLink(
+      result && result.message
+        ? result.message
+        : 'Data estimasi tidak ditemukan.'
+    );
+    return false;
+  }
+
+  // Cara 1: ambil JSON biasa dari Apps Script.
+  try{
+    const response = await fetch(baseUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      cache: 'no-store'
+    });
+
+    const rawText = await response.text();
+
+    if(!response.ok){
+      throw new Error('HTTP ' + response.status + ': ' + rawText.slice(0,200));
+    }
+
+    const result = JSON.parse(rawText);
+    handleResult(result);
+    return;
+
+  }catch(fetchError){
+    console.warn('Fetch JSON gagal, mencoba JSONP:', fetchError);
+  }
+
+  // Cara 2: fallback JSONP untuk deployment Apps Script yang mendukung callback.
   const callbackName =
     'palapaPatientCallback_' +
     Date.now() +
@@ -545,21 +588,11 @@ function loadPatientById(id){
     }
   }
 
-  window[callbackName] = function(response){
+  window[callbackName] = function(result){
     if(completed) return;
     completed = true;
     cleanup();
-
-    if(response && response.status === 'success' && response.data){
-      renderPatient(response.data);
-      return;
-    }
-
-    showInvalidLink(
-      response && response.message
-        ? response.message
-        : 'Data estimasi tidak ditemukan.'
-    );
+    handleResult(result);
   };
 
   script.onerror = function(){
@@ -568,7 +601,7 @@ function loadPatientById(id){
     cleanup();
 
     showInvalidLink(
-      'Halaman gagal terhubung ke Apps Script. Pastikan deployment memakai versi terbaru dan aksesnya Anyone.'
+      'Apps Script belum mengirim data yang dapat dibaca. Deploy ulang Code.gs sebagai New version dan pilih akses Anyone.'
     );
   };
 
@@ -578,18 +611,13 @@ function loadPatientById(id){
     cleanup();
 
     showInvalidLink(
-      'Pengambilan data terlalu lama. Silakan refresh halaman.'
+      'Pengambilan data terlalu lama. Pastikan Code.gs terbaru sudah di-deploy.'
     );
   }, 20000);
 
-  const separator = PALAPA_DATA_API_URL.includes('?') ? '&' : '?';
-
   script.src =
-    PALAPA_DATA_API_URL +
-    separator +
-    'id=' + encodeURIComponent(id) +
-    '&callback=' + encodeURIComponent(callbackName) +
-    '&time=' + Date.now();
+    baseUrl +
+    '&callback=' + encodeURIComponent(callbackName);
 
   script.async = true;
   document.head.appendChild(script);
