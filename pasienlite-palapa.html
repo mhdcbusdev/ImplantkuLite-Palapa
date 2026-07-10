@@ -347,6 +347,9 @@ const lower=[48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
 const animDescs=["Kondisi rahang sebelum prosedur. Tulang rahang dalam kondisi baik dan siap menerima implant.", "Dokter membuat lubang pilot dengan bor bertingkat. Dilakukan di bawah anestesi lokal — tidak terasa sakit.", "Implant titanium dipasang ke dalam tulang. Thread memastikan stabilitas kuat sejak hari pertama.", "Setelah 3–6 bulan osseointegration, crown dipasang. Gigi kembali sempurna."];
 window.IMPLANKU_GIFS=[];
 
+/* Endpoint Google Apps Script untuk mengambil data berdasarkan ID estimasi. */
+const PALAPA_DATA_API_URL = "https://script.google.com/macros/s/AKfycbx8IEuxn9LgGpxSFAeIQZ2U1QO1zYm5pdkKG63Q9S_RcRfzJNpmT2-9XiHaLC10RCJOxQ/exec";
+
 function fmt(value){
   const amount=Number(value)||0;
   return 'Rp '+amount.toLocaleString('id-ID');
@@ -486,21 +489,109 @@ function decodeHash(){
   }
 }
 
-function showInvalidLink(){
+function showPatientMessage(title,message){
   const name=document.getElementById('ps-name');
   const meta=document.getElementById('ps-meta');
-  if(name) name.textContent='Link belum lengkap';
-  if(meta) meta.textContent='Silakan buka link lengkap yang dikirim oleh klinik.';
+  if(name) name.textContent=title;
+  if(meta) meta.textContent=message;
   buildPatientTeeth([]);
   buildPatientCost({teeth:[],penunjang:[]});
 }
 
+function showInvalidLink(message){
+  showPatientMessage(
+    'Link tidak dapat dibuka',
+    message || 'Pastikan link estimasi yang dibuka sudah lengkap.'
+  );
+}
+
+/**
+ * Ambil data dari Apps Script menggunakan JSONP agar dapat dipanggil
+ * langsung dari halaman GitHub Pages.
+ */
+function loadPatientById(id){
+  if(!id){
+    showInvalidLink('ID estimasi tidak ditemukan pada link.');
+    return;
+  }
+
+  showPatientMessage('Memuat data pasien…','Mohon tunggu sebentar.');
+
+  const callbackName='palapaPatientCallback_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+  const script=document.createElement('script');
+  let finished=false;
+
+  function cleanup(){
+    try{ delete window[callbackName]; }catch(e){ window[callbackName]=undefined; }
+    if(script.parentNode) script.parentNode.removeChild(script);
+  }
+
+  const timer=setTimeout(function(){
+    if(finished) return;
+    finished=true;
+    cleanup();
+    showInvalidLink('Data terlalu lama dimuat. Silakan refresh halaman.');
+  },15000);
+
+  window[callbackName]=function(response){
+    if(finished) return;
+    finished=true;
+    clearTimeout(timer);
+    cleanup();
+
+    if(response && response.status==='success' && response.data){
+      renderPatient(response.data);
+      return;
+    }
+
+    showInvalidLink(
+      response && response.message
+        ? response.message
+        : 'Data estimasi tidak ditemukan.'
+    );
+  };
+
+  script.onerror=function(){
+    if(finished) return;
+    finished=true;
+    clearTimeout(timer);
+    cleanup();
+    showInvalidLink('Gagal terhubung ke data estimasi. Silakan coba kembali.');
+  };
+
+  script.src=PALAPA_DATA_API_URL
+    +'?id='+encodeURIComponent(id)
+    +'&callback='+encodeURIComponent(callbackName)
+    +'&_='+Date.now();
+
+  document.body.appendChild(script);
+}
+
 function initPatientPage(){
+  const params=new URLSearchParams(window.location.search);
+  const id=params.get('id');
+
+  // Format utama terbaru: pasienlite-palapa.html?id=IKP...
+  if(id){
+    loadPatientById(id);
+    return;
+  }
+
+  // Format hash lama tetap didukung agar link lama tidak langsung rusak.
   const data=decodeHash();
-  if(data) renderPatient(data); else showInvalidLink();
+  if(data){
+    renderPatient(data);
+    return;
+  }
+
+  showInvalidLink('ID estimasi tidak ditemukan pada link.');
 }
 
 document.addEventListener('DOMContentLoaded',initPatientPage);
-window.addEventListener('hashchange',initPatientPage);
+window.addEventListener('hashchange',function(){
+  if(!new URLSearchParams(window.location.search).get('id')){
+    initPatientPage();
+  }
+});
 if(document.readyState!=='loading') initPatientPage();
 </script>
