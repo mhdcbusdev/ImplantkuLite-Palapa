@@ -515,31 +515,42 @@ function loadPatientById(id){
     return;
   }
 
-  showPatientMessage('Memuat data pasien…','Mohon tunggu sebentar.');
-
-  const callbackName='palapaPatientCallback_'+Date.now()+'_'+Math.floor(Math.random()*100000);
-  const script=document.createElement('script');
-  let finished=false;
-
-  function cleanup(){
-    try{ delete window[callbackName]; }catch(e){ window[callbackName]=undefined; }
-    if(script.parentNode) script.parentNode.removeChild(script);
+  if(!PALAPA_DATA_API_URL || PALAPA_DATA_API_URL.includes('PASTE_')){
+    showInvalidLink('URL Apps Script belum dipasang pada halaman pasien.');
+    return;
   }
 
-  const timer=setTimeout(function(){
-    if(finished) return;
-    finished=true;
-    cleanup();
-    showInvalidLink('Data terlalu lama dimuat. Silakan refresh halaman.');
-  },15000);
+  showPatientMessage('Memuat data pasien…','Mohon tunggu sebentar.');
 
-  window[callbackName]=function(response){
-    if(finished) return;
-    finished=true;
-    clearTimeout(timer);
+  const callbackName =
+    'palapaPatientCallback_' +
+    Date.now() +
+    '_' +
+    Math.floor(Math.random() * 100000);
+
+  const script = document.createElement('script');
+  let completed = false;
+
+  function cleanup(){
+    clearTimeout(timeoutId);
+
+    try{
+      delete window[callbackName];
+    }catch(error){
+      window[callbackName] = undefined;
+    }
+
+    if(script.parentNode){
+      script.parentNode.removeChild(script);
+    }
+  }
+
+  window[callbackName] = function(response){
+    if(completed) return;
+    completed = true;
     cleanup();
 
-    if(response && response.status==='success' && response.data){
+    if(response && response.status === 'success' && response.data){
       renderPatient(response.data);
       return;
     }
@@ -551,20 +562,37 @@ function loadPatientById(id){
     );
   };
 
-  script.onerror=function(){
-    if(finished) return;
-    finished=true;
-    clearTimeout(timer);
+  script.onerror = function(){
+    if(completed) return;
+    completed = true;
     cleanup();
-    showInvalidLink('Gagal terhubung ke data estimasi. Silakan coba kembali.');
+
+    showInvalidLink(
+      'Halaman gagal terhubung ke Apps Script. Pastikan deployment memakai versi terbaru dan aksesnya Anyone.'
+    );
   };
 
-  script.src=PALAPA_DATA_API_URL
-    +'?id='+encodeURIComponent(id)
-    +'&callback='+encodeURIComponent(callbackName)
-    +'&_='+Date.now();
+  const timeoutId = setTimeout(function(){
+    if(completed) return;
+    completed = true;
+    cleanup();
 
-  document.body.appendChild(script);
+    showInvalidLink(
+      'Pengambilan data terlalu lama. Silakan refresh halaman.'
+    );
+  }, 20000);
+
+  const separator = PALAPA_DATA_API_URL.includes('?') ? '&' : '?';
+
+  script.src =
+    PALAPA_DATA_API_URL +
+    separator +
+    'id=' + encodeURIComponent(id) +
+    '&callback=' + encodeURIComponent(callbackName) +
+    '&time=' + Date.now();
+
+  script.async = true;
+  document.head.appendChild(script);
 }
 
 function initPatientPage(){
