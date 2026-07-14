@@ -488,12 +488,14 @@ function buildPatientCost(data){
   const grand=implantTotal+(legacyBoneGraft?legacyBoneGraft.price:0)+tambahanTotal+adminFee;
 
   const main=document.getElementById('ps-implant-breakdown');
+  const crownTypeTxt=(data.crownType||'').trim();
+  const crownLabel=crownTypeTxt ? ('include crown '+crownTypeTxt) : 'include crown';
   if(main){
     main.innerHTML='';
     if(adminFee>0){
       addCostRow(main,'Administrasi',adminFee,grand);
     }
-    addCostRow(main,(data.brand||'Implant')+' (include crown) × '+count,implantTotal,grand);
+    addCostRow(main,(data.brand||'Implant')+' ('+crownLabel+') × '+count,implantTotal,grand);
     if(legacyBoneGraft){
       addCostRow(main,legacyBoneGraft.name,legacyBoneGraft.price,grand);
     }
@@ -515,7 +517,7 @@ function buildPatientCost(data){
   const total=document.getElementById('ps-total');
   if(total) total.textContent=fmt(grand);
   const note=document.getElementById('ps-brand-note');
-  if(note) note.textContent=(data.brand||'—')+' (include crown) · '+count+' implant';
+  if(note) note.textContent=(data.brand||'—')+' ('+crownLabel+') · '+count+' implant';
 
   window.setTimeout(function(){
     document.querySelectorAll('.cbfill').forEach(function(el){
