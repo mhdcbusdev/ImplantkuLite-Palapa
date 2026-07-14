@@ -125,6 +125,14 @@ textarea.finput{resize:none;line-height:1.6;}
 .ds{background:var(--white);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
 .ds-lbl{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:5px;}
 .ds-lbl::before{content:'';width:2.5px;height:12px;background:var(--red);border-radius:2px;flex-shrink:0;}
+.info-card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.info-card:hover{background:var(--bg3);border-color:var(--border2);transform:translateY(-1px);}
+.info-card:active{transform:scale(.99);}
+.info-ico{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--white);border:.5px solid var(--border);border-radius:10px;}
+.info-txt{flex:1;min-width:0;}
+.info-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.info-sub{font-size:10.5px;color:var(--text3);line-height:1.45;}
+.info-arrow{color:var(--text3);font-size:20px;flex-shrink:0;font-weight:300;}
 .ps-tg{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px;}
 .ps-tooth{min-width:0;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:#F1ECE3;color:#7A7266;border:1px solid #E2DACB;}
 .ps-tooth.imp{background:var(--red);color:#fff;border-color:var(--red-dark);animation:tg 2s ease-in-out infinite;}
@@ -326,7 +334,59 @@ textarea.finput{resize:none;line-height:1.6;}
   <p style="font-size:30px;font-weight:300;color:#fff;letter-spacing:-.02em;" id="ps-total">Rp 0</p>
 </div>
 
-</div></div></div>
+</div>
+
+<div class="ds" style="margin-top:14px;">
+  <div class="ds-lbl">INFORMASI TAMBAHAN</div>
+
+  <div class="info-card" onclick="openInfoImg('Pilihan Jenis Implant.png','Pilihan Jenis Implan')">
+    <div class="info-ico">🦷</div>
+    <div class="info-txt">
+      <div class="info-title">Pilihan Jenis Implan</div>
+      <div class="info-sub">Lihat perbandingan merek dan spesifikasi implan yang tersedia</div>
+    </div>
+    <div class="info-arrow">›</div>
+  </div>
+
+  <div class="info-card" onclick="openInfoImg('Perbandingan Crown Gigi.png','Pilihan Jenis Crown')">
+    <div class="info-ico">👑</div>
+    <div class="info-txt">
+      <div class="info-title">Pilihan Jenis Crown</div>
+      <div class="info-sub">Lihat perbedaan material dan estetika setiap jenis crown</div>
+    </div>
+    <div class="info-arrow">›</div>
+  </div>
+
+  <div class="info-card" onclick="openInfoImg('Tindakan Tambahan Implant.png','Kemungkinan Biaya Tambahan')">
+    <div class="info-ico">📋</div>
+    <div class="info-txt">
+      <div class="info-title">Kemungkinan Biaya Tambahan</div>
+      <div class="info-sub">Informasi tindakan yang mungkin dibutuhkan sebelum atau selama pemasangan</div>
+    </div>
+    <div class="info-arrow">›</div>
+  </div>
+
+  <div class="info-card" onclick="openInfoImg('Perbandingan Implant dan Gigi Tiruan.png','Implant vs Gigi Tiruan Lain')">
+    <div class="info-ico">🔍</div>
+    <div class="info-txt">
+      <div class="info-title">Implant vs Gigi Tiruan Lain</div>
+      <div class="info-sub">Lihat perbandingan implant dengan pilihan gigi tiruan lainnya</div>
+    </div>
+    <div class="info-arrow">›</div>
+  </div>
+
+  <p style="font-size:10px;color:var(--text3);line-height:1.6;margin-top:12px;font-style:italic;">* Seluruh data pada halaman ini bersifat estimasi. Kebutuhan yang lebih tepat — termasuk jenis tindakan, jumlah implan, dan biaya aktual — hanya dapat ditentukan setelah pemeriksaan langsung dan konsultasi dengan dokter gigi spesialis yang menangani pemasangan implan.</p>
+</div>
+
+</div></div>
+
+<div id="info-img-modal" onclick="closeInfoImg()" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:20px;cursor:zoom-out;">
+  <div style="max-width:900px;width:100%;max-height:92vh;display:flex;flex-direction:column;align-items:center;">
+    <div id="info-img-title" style="color:#fff;font-size:13px;font-weight:700;margin-bottom:10px;text-align:center;font-family:var(--font);"></div>
+    <img id="info-img-el" src="" alt="" style="max-width:100%;max-height:82vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5);object-fit:contain;background:#fff;"/>
+    <div style="color:rgba(255,255,255,.6);font-size:11px;margin-top:10px;font-family:var(--font);">Ketuk di mana saja untuk menutup</div>
+  </div>
+</div>
 </div>
 
 </div>
@@ -349,6 +409,25 @@ window.IMPLANKU_GIFS=[];
 
 /* Endpoint Google Apps Script untuk mengambil data berdasarkan ID estimasi. */
 const PALAPA_DATA_API_URL = "https://script.google.com/macros/s/AKfycbxNSiCKw8m9RIwMVstI2d37EwDutZLdQLZI2ElfW5cWM1TH-y6sR8M0jWvXDL3xNDLUvg/exec";
+
+/* Base URL folder gambar (assets) di GitHub Pages. */
+const INFO_IMG_BASE = "https://mhdcbusdev.github.io/ImplantkuLite-Palapa/assets/";
+
+function openInfoImg(filename, title){
+  const modal=document.getElementById('info-img-modal');
+  const img=document.getElementById('info-img-el');
+  const ttl=document.getElementById('info-img-title');
+  if(!modal||!img) return;
+  img.src=INFO_IMG_BASE+encodeURIComponent(filename);
+  img.alt=title||'';
+  if(ttl) ttl.textContent=title||'';
+  modal.style.display='flex';
+}
+
+function closeInfoImg(){
+  const modal=document.getElementById('info-img-modal');
+  if(modal) modal.style.display='none';
+}
 
 function fmt(value){
   const amount=Number(value)||0;
